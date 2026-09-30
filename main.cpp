@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <thread>
-
+#include <sstream>
 #include "threadfuncs.h"
 
 int main() {
@@ -13,14 +13,14 @@ int main() {
   std::cout << "main: pid = " << getThreadID()
             << ", opened file: 'output.log'\n";
 
-  // args for threads
-  std::vector<ThreadArgs> args = {
-    {1, "First"},
-    {2, "Second"},
-    {3, "Third"},
-    {4, "Fourth"},
-  };
-
+  // args for thread
+  ThreadArgs args[COUNT_THREADS];
+  for(int i=0;i< COUNT_THREADS;++i){
+	std::ostringstream oss;
+	oss <<"T"<<i;
+	args[i].id =i;
+	args[i].tag =oss.str();
+  }
   // thread are starting
   std::vector<std::thread> threads;
   threads.reserve(COUNT_THREADS);
@@ -31,10 +31,12 @@ int main() {
 
   // wait for stop all threads
   for (auto& t : threads) {
-    if (t.joinable()) t.join();
+    if (t.joinable()){
+	t.join();
+	}
   }
 
   // close file automatically
-  std::cout << "main: all threads finished, file closed\n";
+  logger.writeLine("main: all threads finished, file closed\n");
   return 0;
 }

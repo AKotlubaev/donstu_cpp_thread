@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <syscall.h>
 //#include <windows.h>
+#include <thread>
 #include <sys/types.h>
 
 Logger::Logger(const std::string& filename)
@@ -20,13 +21,15 @@ Logger::~Logger() {
   // std::ofstream close file here automatically
 }
 
-void Logger::writeLine(const std::string& msg) {
+bool Logger::writeLine(const std::string& msg) {
   std::lock_guard<std::mutex> lock(mutex_);
   file_ << msg;
   file_.flush();
   if (!file_) {
     std::cerr << "write failed: " << msg << "\n";
+	return false;
   }
+return true;
 }
 
 pid_t getThreadID() {
@@ -43,14 +46,13 @@ void funcThread(const ThreadArgs& args, Logger& logger) {
     std::ostringstream oss;
 
     oss << "[tag = " << args.tag
-        << "] pid = "  << ::getpid()
-        << " ppid = "  << ::getppid()
-        << " tid = "   << getThreadID()
-        << " iter = "  << i
+        << "] std_id = " << std::this_thread::get_id()
+        << " tid = " << getThreadID()
+        << " pid = " << ::getpid()
+        << " iter = " << i
         << "\n";
     logger.writeLine(oss.str());
 
-    // imitation of useful work
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 }
