@@ -41,8 +41,11 @@ void about() {
   std::cout << "std::thread example\n";
 }
 
+std::atomic<int> counter{0};
+
 void funcThread(const ThreadArgs& args, Logger& logger) {
   for (int i = 0; i < COUNT_ITERATIONS; ++i) {
+    counter++;
     std::ostringstream oss;
 
     oss << "[tag = " << args.tag
