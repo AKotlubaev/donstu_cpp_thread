@@ -3,6 +3,7 @@
 #include <thread>
 #include <sstream>
 #include "threadfuncs.h"
+#include <future>
 
 int main() {
   about();
@@ -21,20 +22,22 @@ int main() {
 	args[i].id =i;
 	args[i].tag =oss.str();
   }
-  // thread are starting
-  std::vector<std::thread> threads;
-  threads.reserve(COUNT_THREADS);
 
-  for (int i = 0; i < COUNT_THREADS; ++i) {
-    threads.emplace_back(funcThread, std::cref(args[i]), std::ref(logger));
-  }
+  std::promise<std::string> prom;
+    std::future<std::string> fut = prom.get_future();
 
-  // wait for stop all threads
-  for (auto& t : threads) {
-    if (t.joinable()){
-	t.join();
-	}
-  }
+    std::thread t(funcThreadWithPromise, std::cref(args[0]), std::ref(logger), std::move(prom));
+
+    
+    std::string result = fut.get();
+    std::cout << "Результат из потока: " << result << std::endl;
+
+   if (t.joinable()) {
+        t.join();
+    }
+
+ 
+  
 
   // close file automatically
   logger.writeLine("main: all threads finished, file closed\n");

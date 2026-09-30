@@ -4,10 +4,11 @@
 #include <mutex>
 #include <fstream>
 #include <atomic>
+#include <future>
 
 // count of threads and iterations
 constexpr int COUNT_THREADS    = 4;
-constexpr int COUNT_ITERATIONS = 10000;
+constexpr int COUNT_ITERATIONS = 4;
 
 extern std::atomic<int> counter;
 
@@ -37,6 +38,8 @@ private:
 
 // function for thread
 void funcThread(const ThreadArgs& args, Logger& logger);
+
+void funcThreadWithPromise(const ThreadArgs& args, Logger& logger, std::promise<std::string> prom);
 
 // get system TID for current linux thread
 pid_t getThreadID();

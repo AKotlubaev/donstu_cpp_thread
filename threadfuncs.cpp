@@ -59,3 +59,10 @@ void funcThread(const ThreadArgs& args, Logger& logger) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 }
+
+void funcThreadWithPromise(const ThreadArgs& args, Logger& logger, std::promise<std::string> prom) {
+    funcThread(args, logger);
+
+    std::string result = "Поток " + args.tag + " завершил работу. Итераций: " + std::to_string(COUNT_ITERATIONS);
+    prom.set_value(result);
+}
