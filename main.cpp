@@ -4,6 +4,49 @@
 #include <sstream>
 #include "threadfuncs.h"
 #include <future>
+#include <mutex>
+#include <condition_variable>
+
+std::mutex g_cv_mutex;
+std::condition_variable g_cv;
+int g_data_buffer = 0;
+bool g_ready = false;     //  есть новые данные для чтения
+bool g_processed = false; 
+
+void producer(Logger& logger) {
+    for (int i = 1; i <= 10; ++i) {
+        {
+            std::unique_lock<std::mutex> lock(g_cv_mutex);
+            
+            
+            g_cv.wait(lock, [] { return !g_ready; });
+
+            g_data_buffer = i;
+            g_ready = true;
+            logger.writeLine("Producer: sent value " + std::to_string(i));
+        }
+       
+        g_cv.notify_one();
+    }
+}
+
+void consumer(Logger& logger) {
+    for (int i = 1; i <= 10; ++i) {
+        std::unique_lock<std::mutex> lock(g_cv_mutex);
+
+      
+        g_cv.wait(lock, [] { return g_ready; });
+
+        logger.writeLine("Consumer: received value " + std::to_string(g_data_buffer));
+        std::cout << "Consumer received: " << g_data_buffer << std::endl;
+
+        g_ready = false;
+        
+        
+        lock.unlock();
+        g_cv.notify_one();
+    }
+}
 
 int main() {
   about();
@@ -14,32 +57,14 @@ int main() {
   std::cout << "main: pid = " << getThreadID()
             << ", opened file: 'output.log'\n";
 
-  // args for thread
-  ThreadArgs args[COUNT_THREADS];
-  for(int i=0;i< COUNT_THREADS;++i){
-	std::ostringstream oss;
-	oss <<"T"<<i;
-	args[i].id =i;
-	args[i].tag =oss.str();
-  }
+    std::thread prod(producer, std::ref(logger));
+    std::thread cons(consumer, std::ref(logger));
 
-  std::promise<std::string> prom;
-    std::future<std::string> fut = prom.get_future();
-
-    std::thread t(funcThreadWithPromise, std::cref(args[0]), std::ref(logger), std::move(prom));
-
-    
-    std::string result = fut.get();
-    std::cout << "Результат из потока: " << result << std::endl;
-
-   if (t.joinable()) {
-        t.join();
-    }
-
- 
-  
+    prod.join();
+    cons.join();
 
   // close file automatically
   logger.writeLine("main: all threads finished, file closed\n");
+  std::cout << "main: all done!\n";
   return 0;
 }
